@@ -1,9 +1,4 @@
 {
   "buildCommand": "pip install -r requirements.txt",
-  "framework": "fastapi",
-  "functions": {
-    "app/api/index.py": {
-      "runtime": "python3.11"
-    }
-  }
+  "framework": "fastapi"
 }
