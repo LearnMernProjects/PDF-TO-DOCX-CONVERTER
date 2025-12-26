@@ -1,0 +1,10 @@
+{
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": ".",
+  "framework": "fastapi",
+  "functions": {
+    "app/api/index.py": {
+      "runtime": "python3.9"
+    }
+  }
+}
