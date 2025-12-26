@@ -19,7 +19,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 @app.get("/", response_class=HTMLResponse)
 def upload_page():
     return """ 
-#Writing basic code for frontend to submit pdf     
+  
     <!DOCTYPE html>
     <html lang="en">
     <head>
