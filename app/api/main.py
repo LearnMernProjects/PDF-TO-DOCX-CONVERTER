@@ -1,7 +1,9 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 import os
 import uuid
+import tempfile
+from io import BytesIO
 
 from app.core.pdf_extract import extract_best_text
 from app.core.pdf_contentType import group_content_under_headings
@@ -12,8 +14,11 @@ app = FastAPI()
 UPLOAD_DIR = "storage/uploadFiles"
 OUTPUT_DIR = "storage/outputFiles"
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create storage directories: {e}")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -432,28 +437,40 @@ def upload_page():
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
+    pdf_path = None
     try:
-        pdf_id = str(uuid.uuid4())
-        pdf_path = f"{UPLOAD_DIR}/{pdf_id}.pdf"
-        docx_path = f"{OUTPUT_DIR}/{pdf_id}.docx"
-
-        # Save uploaded PDF
-        with open(pdf_path, "wb") as f:
-            f.write(await file.read())
-
-        # Pipeline
+        # Read file into memory
+        pdf_content = await file.read()
+        
+        # Create temporary file for processing
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
+            pdf_path = tmp_pdf.name
+            tmp_pdf.write(pdf_content)
+        
+        # Extract text and structure
         text, _ = extract_best_text(pdf_path)
         structured = group_content_under_headings(text)
-        build_word_document(structured, docx_path)
-
-        # Return generated Word file
-        return FileResponse(
-            path=docx_path,
-            filename="converted.docx",
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        
+        # Generate DOCX in memory
+        docx_buffer = BytesIO()
+        build_word_document(structured, docx_buffer)
+        docx_buffer.seek(0)
+        
+        # Return streaming response
+        return StreamingResponse(
+            iter([docx_buffer.getvalue()]),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": "attachment; filename=converted.docx"}
         )
     except Exception as e:
         print(f"Error during conversion: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise
+        return {"error": str(e), "details": traceback.format_exc()}, 500
+    finally:
+        # Clean up temporary file
+        if pdf_path and os.path.exists(pdf_path):
+            try:
+                os.remove(pdf_path)
+            except Exception as e:
+                print(f"Could not delete temp file: {e}")
