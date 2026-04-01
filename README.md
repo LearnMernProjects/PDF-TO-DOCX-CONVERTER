@@ -1,7 +1,7 @@
 # PDF to Word Converter
 
 ## Overview
-This project is a backend driven PDF to Word document conversion system built using Python and FastAPI. The goal of the project is to convert PDF files into Microsoft Word documents while preserving document structure, readability, and alignment as closely as possible.
+This project is a backend driven PDF to Word document conversion system built using Python, Java and FastAPI. The goal of the project is to convert PDF files into Microsoft Word documents while preserving document structure, readability, and alignment as closely as possible.
 Instead of attempting pixel perfect replication, which is not feasible due to fundamental differences between PDF and Word formats, the project focuses on reconstructing the logical structure and visual intent of the original document in a reliable and readable Word format.
 The application provides a simple web interface where users can upload a PDF file and download the generated Word document.
 
